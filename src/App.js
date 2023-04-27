@@ -1,24 +1,26 @@
-import logo from './logo.svg';
 import './App.css';
+import Home from './Home'
+import JoinGame from './JoinGame';
+import CreateGame from './CreateGame';
+import GamePage from './GamePage';
+// import TeamsCreation from './TeamsCreation';
+import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <div className="App">
+       <h1 id="title"><Link to="/">Pub Golf</Link></h1>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/create" element={<CreateGame />} />
+          <Route path="/join" element={<JoinGame/>}/>
+          <Route path="/game/:gamecode" element={<GamePage/>}/>
+          {/* <Route path="/teams" element={<TeamsCreation/>}/> */}
+          <Route path="*" element={<Home/>} />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

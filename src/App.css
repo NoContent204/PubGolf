@@ -1,38 +1,439 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    background-color: #caebf2; 
+}
+
 .App {
+    display: flex;
+    flex-flow: column wrap;
+    justify-content: center;
+}
+
+
+button , input[type=submit], input[type=button] {
+  background-color: #00c5a0;
+  color: black;
+}
+
+button[id="deleteHole"]{
+  background-color: red;
+}
+
+button[id="helpIcon"] {
+  color:#fff;
+  background-color:#feb22a;
+  width:12px;
+  height:12px;
+  display:inline-block;
+  border-radius:100%;
+  font-size:10px;
+  text-align:center;
+  text-decoration:none;
+  -webkit-box-shadow: inset -1px -1px 1px 0px rgba(0,0,0,0.25);
+  -moz-box-shadow: inset -1px -1px 1px 0px rgba(0,0,0,0.25);
+  box-shadow: inset -1px -1px 1px 0px rgba(0,0,0,0.25);
+}
+
+#title {
+  align-self: center;
+}
+
+#title a:link {
+  color: red;
+}
+#title a:visited{
+  color: blueviolet;
+}
+
+/* HOME PAGE  */
+.home {
+  display: flex;
+  flex-flow: column wrap;
+  justify-content: center;
+}
+#home-content {
+  align-self: center;
+  text-align: center;
+}
+#home-buttons {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: space-evenly;
+}
+.homebtn{
+  width: 10em;
+  height: 5em;
+}
+
+/* JOIN GAME PAGE */
+
+.joingame {
+  align-self: center;
+}
+.joingame h2 {
+  text-align: center;
+}
+.joingame p {
+  text-align: center;
+}
+#joingameform {
+  display: flex;
+  flex-flow: column wrap;
+  gap: 0.3em;
+  align-content: center; 
+}
+
+
+/* CREATE GAME PAGE */
+
+.createGame {
+  display: flex;
+  flex-flow: column wrap;
+  gap: 0.5em;
+  align-content: center;
+}
+.createGame p, h2 {
   text-align: center;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+.createBtn:disabled{
+  color: #666;
+  opacity: 0.8;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
+#helpIcon{
+  color:#fff;
+  background-color:#feb22a;
+  width:12px;
+  height:12px;
+  display:inline-block;
+  border-radius:100%;
+  font-size:10px;
+  text-align:center;
+  text-decoration:none;
+  -webkit-box-shadow: inset -1px -1px 1px 0px rgba(0,0,0,0.25);
+  -moz-box-shadow: inset -1px -1px 1px 0px rgba(0,0,0,0.25);
+  box-shadow: inset -1px -1px 1px 0px rgba(0,0,0,0.25);
+
 }
 
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
+.gametable {
+  text-align: center;
+  display: inline-block;
+}
+.gameMisc {
+  text-align: center;
+  display: block;
+}
+#customProperty {
+  width: 15em;
+  margin: auto;
+  padding-bottom: 10%;
+}
+
+.centerTables{
   display: flex;
-  flex-direction: column;
-  align-items: center;
+  flex-flow: column wrap;
+  align-content: center;
+  text-align: center;
+}
+
+.centerTables p{ 
+  margin: auto;
+  width: 18em;
+  padding-bottom: 10%;
+}
+
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+  padding: 0.2em;
+}
+
+.textInput {
+  width: 90%;
+}
+.parInput {
+  width: 40%;
+}
+
+.usernamediv {
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: center; 
+}
+
+#username {
+  width: 33%;
+}
+
+.btns {  
+  display: flex;
+  flex-flow: column wrap;
+  align-content: center;
+}
+
+.btns button, input[type="submit"]{
+  align-self: center;
+}
+
+#scoreInput {
+  width: 27%;
+}
+
+.bingoSetup{
+  display: flex;
+  flex-flow: column wrap;
+  align-content: center;
+}
+
+.createBingo{
+  display: flex;
+  flex-flow: row wrap;
   justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
 }
 
-.App-link {
-  color: #61dafb;
+.react-tabs {
+  -webkit-tap-highlight-color: transparent;
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.react-tabs__tab-list {
+  border-bottom: 1px solid #aaa;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.react-tabs__tab {
+  display: inline-block;
+  border: 1px solid transparent;
+  border-bottom: none;
+  bottom: -1px;
+  position: relative;
+  list-style: none;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.react-tabs__tab--selected {
+  background: #fff;
+  border-color: #aaa;
+  color: black;
+  border-radius: 5px 5px 0 0;
+}
+
+.react-tabs__tab:focus {
+  outline: none;
+}
+
+.react-tabs__tab:focus:after {
+  content: '';
+  position: absolute;
+  height: 5px;
+  left: -4px;
+  right: -4px;
+  bottom: -5px;
+  background: #fff;
+}
+
+.react-tabs__tab-panel {
+  display: none;
+}
+
+.react-tabs__tab-panel--selected {
+  display: block;
+}
+
+/* BINGO */
+
+.bingotable {
+  width:300px;
+  height: 300px;
+  border-collapse:collapse;
+}
+.bingosquare{
+  width: 5em;
+  height: 5em;
+  text-align: center;
+  background:#fcfcd4;
+  border:1px solid #000
+}
+
+.bingosquareTicked {
+  width: 5em;
+  height: 5em;
+  text-align: center;
+  position: relative;
+  background-color: #8df8b7;
+  /* padding: 30px; */
+  overflow: hidden; 
+  border:1px solid #000
+
+}
+
+.bingosquareTicked:before, .bingosquareTicked:after {
+  position: absolute;
+  content: '';
+  background: red;
+  display: block;
+  width: 60%;
+  height: 2px;
+  -webkit-transform: rotate(-45deg);
+  transform: rotate(-45deg);
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  margin: auto;
+}
+
+.bingosquareTicked:after {
+  -webkit-transform: rotate(45deg);    
+  transform: rotate(45deg);
+}
+
+.loader {
+ 
+  margin: 0 auto;
+  border: 16px solid #f3f3f3;
+  border-radius: 50%;
+  border-top: 16px solid #3498db;
+  width: 120px;
+  height: 120px;
+  -webkit-animation: spin 2s linear infinite; /* Safari */
+  animation: spin 2s linear infinite;
+}
+
+/* Safari */
+@-webkit-keyframes spin {
+  0% { -webkit-transform: rotate(0deg); }
+  100% { -webkit-transform: rotate(360deg); }
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.tooltip {
+  display:inline-block;
+  position:relative;
+  border-bottom:1px dotted #666;
+  text-align:left;
+}
+
+.tooltip h3 {margin:12px 0;}
+
+.tooltip .left {
+  min-width:200px;
+  max-width:400px;
+  top:50%;
+  right:100%;
+  margin-right:20px;
+  transform:translate(0, -50%);
+  padding:20px;
+  color:#ffffff;
+  background-color:#009cdc;
+  font-weight:normal;
+  font-size:13px;
+  border-radius:8px;
+  position:absolute;
+  z-index:99999999;
+  box-sizing:border-box;
+  display:none;
+  border:1px solid #DCA;
+}
+
+.tooltip:hover .left {
+  display:block;
+}
+
+.tooltip .left i {
+  position:absolute;
+  top:50%;
+  left:100%;
+  margin-top:-12px;
+  width:12px;
+  height:24px;
+  overflow:hidden;
+}
+
+.tooltip .left i::after {
+  content:'';
+  position:absolute;
+  width:12px;
+  height:12px;
+  left:0;
+  top:50%;
+  transform:translate(-50%,-50%) rotate(-45deg);
+  background-color:#009cdc;
+  border:1px solid #DCA;
+}
+
+/* CREATING TEAMS */
+
+.createTeams{
+  display: flex;
+  flex-flow: column wrap;
+  align-content: center;
+}
+
+.addTeam{
+  display: flex;
+  flex-flow: row wrap;
+  justify-content: flex-end;
+  width: 20em;
+}
+
+.currentTeams {
+  display: flex;
+  flex-flow: column wrap;
+  align-content: center;
+}
+
+.teamsList{
+  list-style-type: none;
+  margin: 0;
+}
+
+.teamListElement {
+  float: left;
+  padding-right: 1em;
+}
+
+.teamDiv {
+  display: flex;
+  flex-flow: row wrap;
+  width: 20em;
+  border: 1px solid #c1c7cf;
+  border-radius: 3px;
+  margin: 20px 0;
+}
+
+.teamDesc {
+  width: 20em;
+  background-color: #fcfcd4;
+  border-bottom: 1px solid #c1c7cf;
+}
+
+.teamTitle{
+  text-align: center;
+  margin-top: -10px;
+}
+
+.joinTeam{
+  float: right;
+}
+
+.leaveTeam {
+  float: right;
+}
+
+i[class*="icon-"], i[class^="icon-"] {
+  display: inline-block;
+  font-style: normal !important;
+  line-height: 1;
+  margin-left: 14.8em;
+
 }
