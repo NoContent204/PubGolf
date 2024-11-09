@@ -116,9 +116,10 @@ function CreateGame() {
       playerUpdates["/players/"+newGameKey] = playerObject;
       update(ref(db),playerUpdates);
 
-      window.sessionStorage.setItem("username", username);
-      window.sessionStorage.setItem("UID", newUserKey);
-      window.sessionStorage.setItem("GID", newGameKey);
+      window.localStorage.setItem("username", username);
+      window.localStorage.setItem("UID", newUserKey);
+      window.localStorage.setItem("GID", newGameKey);
+      window.localStorage.setItem("game-code",gameinfo["code"])
 
       nav('/game/'+gameinfo["code"]);
 

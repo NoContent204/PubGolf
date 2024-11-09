@@ -20,10 +20,10 @@ function joinTeam(teamKey) {
 
     const playerName = prompt("Enter your name");
     if (playerName !== null){
-        window.sessionStorage.setItem("teamID",teamKey);
+        window.localStorage.setItem("teamID",teamKey);
         const newPlayerKey = push(child(ref(db), 'teams/'+teamKey+'/players')).key; 
-        window.sessionStorage.setItem("playerID",newPlayerKey);
-        window.sessionStorage.setItem("playerName",playerName);
+        window.localStorage.setItem("playerID",newPlayerKey);
+        window.localStorage.setItem("playerName",playerName);
         const teamUpdates = {}
         teamUpdates["/teams/"+teamKey+'/players/'+newPlayerKey] = playerName
         update(ref(db),teamUpdates);
@@ -31,21 +31,21 @@ function joinTeam(teamKey) {
 }
 
 function switchTeam(newTeamKey){
-    const playerKey = window.sessionStorage.getItem("playerID");
-    const teamKey = window.sessionStorage.getItem("teamID");
-    const playerName = window.sessionStorage.getItem("playerName");
+    const playerKey = window.localStorage.getItem("playerID");
+    const teamKey = window.localStorage.getItem("teamID");
+    const playerName = window.localStorage.getItem("playerName");
     remove(ref(db,'/teams/'+teamKey+'/players/'+playerKey));
 
-    window.sessionStorage.setItem("teamID",newTeamKey)
+    window.localStorage.setItem("teamID",newTeamKey)
     const teamUpdates = {}
     teamUpdates["/teams/"+newTeamKey+'/players/'+playerKey] = playerName
     update(ref(db),teamUpdates);
 }
 
 function leaveTeam(teamKey) {
-    const playerKey = window.sessionStorage.getItem("playerID");
+    const playerKey = window.localStorage.getItem("playerID");
     remove(ref(db,'/teams/'+teamKey+'/players/'+playerKey));
-    window.sessionStorage.removeItem("teamID");
+    window.localStorage.removeItem("teamID");
 }
 
 
@@ -110,12 +110,12 @@ function TeamsCreation() {
                                 <summary className="teamDesc">
                                     {teamsData[key].teamName}
                                     {teamsData[key].players === undefined ? <span>(0/5)</span> : <span>({Object.values(teamsData[key].players).length}/5)</span>}
-                                    {window.sessionStorage.getItem("teamID") === null ? 
+                                    {window.localStorage.getItem("teamID") === null ? 
                                                                 (teamsData[key].players === undefined || Object.values(teamsData[key].players).length < 5 ? // not currently in a team
                                                                 <button className="joinTeam" onClick={() => joinTeam(key)}>Join Team</button>  : <i class="icon-lock">&#128274;</i>) 
                                     
                                                                 : (teamsData[key].players === undefined || Object.values(teamsData[key].players).length < 5 ? //currently in a team
-                                                                 (window.sessionStorage.getItem("teamID") === key ? 
+                                                                 (window.localStorage.getItem("teamID") === key ? 
                                                                     (<button className="leaveTeam" onClick={() => leaveTeam(key)}>Leave</button>) : <button className="joinTeam" onClick={() => switchTeam(key)}>Switch To</button> ) 
                                                                  : <i class="icon-lock">&#128274;</i>) 
                                     

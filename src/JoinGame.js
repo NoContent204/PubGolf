@@ -24,12 +24,13 @@ function JoinGame() {
             // create new player object for game
             const playerObject = {};
             playerObject[newUserKey] = true;
-            console.log(Object.keys(snapshot)[0])
+            console.log(Object.keys(snapshot))
             update(child(ref(db), "/players/"+Object.keys(snapshot.val())[0]),playerObject);
 
-            window.sessionStorage.setItem("username", username);
-            window.sessionStorage.setItem("UID", newUserKey);
-            window.sessionStorage.setItem("GID", Object.keys(snapshot.val())[0]);
+            window.localStorage.setItem("username", username);
+            window.localStorage.setItem("UID", newUserKey);
+            window.localStorage.setItem("GID", Object.keys(snapshot.val())[0]);
+            window.localStorage.setItem("game-code",gamecode)
 
             // send user to game page 
             nav('/game/'+gamecode);

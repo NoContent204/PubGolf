@@ -130,8 +130,8 @@ function GamePage() {
                     scoreInput.value = '';
                     //update users score on database
                     const userUpdates = {}
-                    const UID = window.sessionStorage.getItem("UID");
-                    const username = window.sessionStorage.getItem("username");
+                    const UID = window.localStorage.getItem("UID");
+                    const username = window.localStorage.getItem("username");
                     userUpdates["/users/"+UID] = {"username": username, "score": newScores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints  };
                     update(ref(db),userUpdates);
                 } catch {
@@ -159,8 +159,8 @@ function GamePage() {
             if (pointsDeducted < 0){
                 setBingoPoints(bingoPoints + pointsDeducted);
                 const userUpdates = {}
-                const UID = window.sessionStorage.getItem("UID");
-                const username = window.sessionStorage.getItem("username");
+                const UID = window.localStorage.getItem("UID");
+                const username = window.localStorage.getItem("username");
                 userUpdates["/users/"+UID] = {"username": username, "score": scores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints + pointsDeducted  };
                 update(ref(db),userUpdates);
             }
@@ -169,11 +169,11 @@ function GamePage() {
 
         const saveSettings = () => {
             const newUsername = document.getElementById("newUsername").value;
-            const username = window.sessionStorage.getItem("username");
+            const username = window.localStorage.getItem("username");
 
             if (newUsername !== username){
-                const UID = window.sessionStorage.getItem("UID");
-                window.sessionStorage.setItem("username",newUsername);
+                const UID = window.localStorage.getItem("UID");
+                window.localStorage.setItem("username",newUsername);
                 const userUpdates = {}
                 userUpdates["/users/"+UID] = {"username": newUsername, "score": scores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints};
                 update(ref(db),userUpdates);
@@ -320,7 +320,7 @@ function GamePage() {
                     <TabPanel>
                         <div className="createGame">
                             <strong><label for="newUsername">Username</label></strong>
-                            <input type="text" defaultValue={window.sessionStorage.getItem("username")} id="newUsername"></input> 
+                            <input type="text" defaultValue={window.localStorage.getItem("username")} id="newUsername"></input> 
                             
                             <button onClick={saveSettings}>Save Changes</button>
 
