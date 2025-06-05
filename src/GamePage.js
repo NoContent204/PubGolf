@@ -3,8 +3,10 @@ import { app } from "./firebase";
 import React, { useEffect, useState } from "react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
 import { getDatabase, ref, onValue, get, query, orderByChild, equalTo, update, onChildAdded} from 'firebase/database';
+import toast from "react-hot-toast";
 
 const db = getDatabase(app);
+const UID = window.localStorage.getItem("UID");
 
 function ordinal_suffix_of(i) {
     var j = i % 10,
@@ -34,11 +36,12 @@ function shuffleArray(array) {
 
 function GamePage() {
 
+    console.log("game page")
+
     const [leaderboard, setLeaderboard] = useState([]);
     const [isLoading , setLoading] = useState(true);
     const [scores , setScores] = useState([]);
     const [holes , setHoles] = useState([]);
-    const [currentHole , setCurrentHole] = useState(0);
     const [challenges , setChallenges] = useState([])
     const [bingoPoints , setBingoPoints] = useState(0);
     const [completeChallenges , setCompleteChallenges] = useState(["bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare"]);
@@ -95,7 +98,8 @@ function GamePage() {
                 const challengesArray = Object.values(challenges);
                 setChallenges(shuffleArray(challengesArray));
             }
-            setScores(holes.map(() => 0));
+            const storedScores = window.localStorage.getItem("scores")
+            setScores(storedScores ? storedScores.split(','): holes.map(() => 0));
             setHoles(holes);
             setLoading(false);
 
@@ -109,37 +113,54 @@ function GamePage() {
 
 
 
-    }, [gamecode]);
-    
-        const submitScore = () => {
-            const scoreInput = document.getElementById('scoreInput');
-            if (scoreInput.value === null || scoreInput.value === '') {
-                alert("Please enter your score for this hole");
-            } else {
+    });
+
+        const handleScoreChange = (event) => {
+            const score = event.target.value
+            const hole = event.target.dataset.hole
+
                 try {
-                    const scoreInt = parseInt(scoreInput.value);
+                    const scoreInt = parseInt(score);
                     const newScores = [...scores];
-                    newScores[currentHole] = scoreInt;
+                    newScores[hole] = isNaN(scoreInt) || scoreInt< 0 ? 0 : scoreInt;
                     setScores(newScores);
-                    if (currentHole !== holes.length-1) {
-                        setCurrentHole(currentHole + 1);
-                    } else {
-                        const submitScorebtn = document.getElementById("submitScore");
-                        submitScorebtn.disabled = true;
-                    }
-                    scoreInput.value = '';
+                    window.localStorage.setItem("scores", newScores)
+                    console.log(window.localStorage.getItem("scores"))
                     //update users score on database
                     const userUpdates = {}
                     const UID = window.localStorage.getItem("UID");
                     const username = window.localStorage.getItem("username");
+                    
                     userUpdates["/users/"+UID] = {"username": username, "score": newScores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints  };
                     update(ref(db),userUpdates);
                 } catch {
-
+                    toast.error(`There was an error updating your score. Please try again`)
                 } 
-            }
         }
 
+        const getScoreLabelClass = (score, par) => {
+            const scoreInt = parseInt(score)
+            const diff = scoreInt - par
+            if (scoreInt === 1) return "text-yellow-300 font-bold"
+            if (diff < 0) return "text-green-300"
+            if (diff === 0 ) return "text-blue-300" 
+            return "text-red-300"
+        }
+
+        const getScoreLabelText = (score, par) => {
+            const scoreInt = parseInt(score)
+            if (isNaN(scoreInt) || scoreInt === 0) return "-"
+            const diff = scoreInt - par
+            if (scoreInt === 1) return "Hole in one!"
+            if (diff < -2) return `${diff}`
+            if (diff === -2) return "Eagle"
+            if (diff === -1) return "Birdie"
+            if (diff === 0 ) return "Par"
+            if (diff === 1 ) return "Bogey"
+            if (diff === 2 ) return "Double Bogey"
+            if (diff > 2) return `+${diff}`
+
+        }
         const tickSquare = (event) => {
             if (event.target.className === "bingosquare"){
                 event.target.className = "bingosquareTicked"
@@ -186,106 +207,92 @@ function GamePage() {
             return <div className="loader"></div>;
         }
         return (
-            <div className='createGame'>
+            <div className='flex justify-center px-6 py-8'>
+                
                 <Tabs>
-                    <TabList>
-                        <Tab>Scorecard</Tab>
-                        <Tab>Leaderboard</Tab>
-                        {challenges.length !== 0 ? <Tab>Bingo</Tab> : <></>}
-                        <Tab>Settings</Tab>
+                    <p class="ms-auto text-right"><i>Game Code: {gamecode}</i></p>
+                    <div class="bg-[#1b4332] py-2 shadow-md">
+                    <TabList className={"flex justify-evenly"}>
+                        <Tab selectedClassName="active" className={"tab px-4 py-2 rounded-t-lg font-medium"}>Scorecard</Tab>
+                        <Tab selectedClassName="active" className={"tab px-4 py-2 rounded-t-lg font-medium"}>Leaderboard</Tab>
+                        {challenges.length !== 0 ? <Tab className={"tab px-4 py-2 rounded-t-lg font-medium"}>Bingo</Tab> : <></>}
+                        <Tab selectedClassName="active" className={"tab px-4 py-2 rounded-t-lg font-medium"}>Rules</Tab>
                     </TabList>
+                    </div>
 
-                    <TabPanel>
-                        <div className="centerTables">
-                            <table className='gametable'>
-                                <thead>
-                                    <tr>
-                                        <th colSpan="4" >Game Code: {gamecode}</th>
-                                    </tr>
-                                    <tr>
-                                        <th>Pub</th>
-                                        <th>Drink</th>
-                                        {/* <th>Water Hazard?</th> */}
-                                        <th>Par</th>
-                                        <th>Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="gameInfo">
-                                {holes.map((hole, index) => { 
+                    <TabPanel className={"container mx-auto"}>
+                        <div class="tab-content" id="scorecard">
+                            <h2 class="text-xl font-semibold mb-6 text-left">Scorecard</h2>
+                        
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+
+                                {holes.map((hole, index) => {
                                     return (
-                                    <React.Fragment key={index}>
-                                        <tr>
-                                            <td>{hole.pub}</td>
-                                            <td>{hole.drink}</td>
-                                            {/* <td>{hole.waterHazard ? "Yes" : "No"}</td> */}
-                                            <td>{hole.par}</td>
-                                            <td>{scores[index]}</td>
-                                        </tr>
-                                    </React.Fragment>
+                                        <React.Fragment key={index}>
+                                            <div class="hole-card rounded-lg shadow-lg p-5">
+                                                <div class="flex justify-between items-start">
+                                                    <div>
+                                                        <h3 class="font-semibold text-lg">{hole.pub}</h3>
+                                                        <p class="text-[#a7f3d0]">{hole.drink}</p>
+                                                    </div>
+                                                    <div class="bg-[#081c15] px-3 py-1 rounded-full flex items-center">
+                                                        <span class="text-sm mr-1">Par</span>
+                                                        <span class="font-bold">{hole.par}</span>
+                                                    </div>
+                                                </div>
+                                                <div class="mt-2 flex justify-between items-center">
+                                                    <span class="text-sm text-gray-300">Hole {index +1}</span>
+                                                </div>
+                                                <div class="space-y-3 mt-4">
+                                            
+                                                    <div class="flex items-center justify-between">
+                                                        <div class="flex items-center">
+                                                            <input type="number" class="score-input w-16 px-2 py-1 rounded-lg text-center mr-2" placeholder="Sips" min="1" onChange={handleScoreChange} data-hole={index} value={scores[index] ? scores[index]: undefined}/>
+                                                            <span class={getScoreLabelClass(scores[index], hole.par)}>{getScoreLabelText(scores[index], hole.par)}</span>
+                                                        </div>
+                                                    </div>
+                                            
+                                                </div>                                            
+                                            </div>
+                                        </React.Fragment>
                                     );
                                 })}
-                                {challenges.length !== 0 
-                                                    ?  <tr> 
-                                                            <td/>
-                                                            <td/>
-                                                            {/* <td/> */}
-                                                            <td>Bingo points</td>
-                                                            <td>{bingoPoints}</td>
-                                                            
-                                                        </tr> 
-                                                    : <></>
-                                } 
-                                <tr>
-                                    <td/>
-                                    <td/>
-                                    {/* <td/> */}
-                                    <td>Total</td>
-                                    <td>{scores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints}</td>
-                                </tr>
-                                </tbody>
-                            </table>
-                            <div className="gameMisc">
-                                <h4>Current drink: {holes[currentHole]["drink"]}</h4>
-                                {holes[currentHole]["customProperty"] !== '' ? <h4 id="customProperty">At this hole: {holes[currentHole]["customProperty"]}</h4> : <></>}
-                                <input id="scoreInput" min={1} type="number" inputMode="numeric" pattern="[0-9]+" placeholder="Your score"></input>
-                                <br></br><br></br>
-                                <input id="submitScore" type="button" value="Submit Score" onClick={submitScore}></input>
+                
                             </div>
-
                         </div>
                         
                     </TabPanel>
 
-                    <TabPanel>
-                        <div className="centerTables">
-                            <table className='gametable'>
-                                <thead>
-                                    <tr>
-                                        <th colSpan="3" >Game Code: {gamecode}</th>
-                                    </tr>
-                                    <tr>
-                                        <th>Position</th>
-                                        <th>Username</th>
-                                        <th>Score</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="gameInfo">
-                                    { leaderboard.map((player, index) => {
+                    <TabPanel className={"container mx-auto"}>
+                        <div class="tab-content" id="leaderboard">
+                            <h2 class="text-xl font-semibold mb-6 text-left">Leaderboard</h2>
+                            <div class="bg-[#2d6a4f] rounded-lg shadow-lg p-6">
+                                <table className='w-full'>
+                                    <thead>
+                                        <tr class="border-b-2 border-[#74c69d]">
+                                            <th class="text-left py-3 px-4">Position</th>
+                                            <th class="text-left py-3 px-4">Username</th>
+                                            <th class="text-left py-3 px-4">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="leaderboardBody">
+                                        { leaderboard.map((player, index) => {
 
-                                        return (
-                                            <React.Fragment key={index}>
-                                                <tr>
-                                                    <td>{ordinal_suffix_of(index+1)}</td>
-                                                    <td>{player["username"]}</td>
-                                                    <td>{player["score"]}</td>
-                                                </tr>
-                                            </React.Fragment>
-                                        );
-                                        })
-                                    }   
-                                </tbody>
-                            </table>
-
+                                            return (
+                                                <React.Fragment key={index}>
+                                                    <tr class={player.id === UID? "bg-[#1b4332]" : ""}>
+                                                        <td class="py-3 px-4">{ordinal_suffix_of(index+1)}</td>
+                                                        <td class="py-3 px-4">{player["username"]}</td>
+                                                        <td class="py-3 px-4">{player["score"]}</td>
+                                                    </tr>
+                                                </React.Fragment>
+                                            );
+                                            })
+                                        }   
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         
                     </TabPanel>
@@ -318,12 +325,41 @@ function GamePage() {
                         
                     </TabPanel> : <></>}
                     <TabPanel>
-                        <div className="createGame">
-                            <strong><label for="newUsername">Username</label></strong>
-                            <input type="text" defaultValue={window.localStorage.getItem("username")} id="newUsername"></input> 
-                            
-                            <button onClick={saveSettings}>Save Changes</button>
 
+                        <div id="rules" class="tab-content">
+                            <h2 class="text-left text-xl font-semibold mb-6">Pub Golf Rules</h2>
+                            <div class="bg-[#2d6a4f] rounded-lg shadow-lg p-6">
+                                <div class="space-y-6">
+                                    <div>
+                                        <h3 class="text-lg font-medium mb-2">How to Play</h3>
+                                        <p>Pub Golf is a drinking game where players visit multiple pubs (holes) and consume a specified drink at each location. The goal is to finish each drink in as few sips as possible, similar to golf where the lowest score wins.</p>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 class="text-lg font-medium mb-2">Scoring</h3>
+                                        <ul class="list-disc pl-5 space-y-2">
+                                            <li>Each hole has a "par" - the expected number of sips/gulps to finish the drink</li>
+                                            <li>Your score is the number of sips/gulps you take</li>
+                                            <li>Finishing in one gulp is a "hole in one"</li>
+                                            <li>The player with the lowest total score at the end wins</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div>
+                                        <h3 class="text-lg font-medium mb-2">Penalties</h3>
+                                        <ul class="list-disc pl-5 space-y-2">
+                                            <li>+2 strokes for spilling your drink</li>
+                                            <li>+1 stroke for breaking etiquette (e.g., using wrong hand)</li>
+                                            <li>+3 strokes for not completing a hole</li>
+                                        </ul>
+                                    </div>
+                                    
+                                    <div class="bg-[#1b4332] p-4 rounded-lg">
+                                        <h3 class="text-lg font-medium mb-2">Safety First!</h3>
+                                        <p>Always drink responsibly and arrange for safe transportation. Consider having designated drivers or using ride-sharing services.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </TabPanel>
                 </Tabs>

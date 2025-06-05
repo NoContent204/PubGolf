@@ -3,7 +3,8 @@ import { v4 as uuidv4 } from "uuid";
 import { app } from "./firebase";
 import { getDatabase, ref, push, child, update } from "firebase/database";
 import { useNavigate } from "react-router-dom";
-
+import toast from "react-hot-toast";
+import Checkbox from '@mui/material/Checkbox';
 
 function toggleBingo(checked){
   const challengeInputs = document.querySelectorAll('.challengeInput');
@@ -36,48 +37,21 @@ function CreateGame() {
 
     const nav = useNavigate();
 
-    // const [rows, setRows] = useState([{ id: Math.random(), pub: '', drink: '', par: 0, waterHazard: false, customProperty: ''}]);
-    const [rows, setRows] = useState([{ id: Math.random(), pub: '', drink: '', par: 0, customProperty: ''}]);
+    const [holes, setRows] = useState([]);
+    const [teamsEnabled, enableTeams] = useState(false);
 
-    
-  
-    const handleChange = (value, id, property) => {
-      var updatedRows = rows;
-      var index = updatedRows.indexOf(updatedRows.find(row => row.id === id))
-      updatedRows[index][property] = value;
-      setRows(updatedRows);
-    }
-    // const [newRow, setNewRow] = useState({ id: Math.random(), pub: '', drink: '', par: 0, waterHazard: false, customProperty: '' });
-    const [newRow, setNewRow] = useState({ id: Math.random(), pub: '', drink: '', par: 0, customProperty: '' });
-
-  
-    const handleAddRow = () => {
-      setRows((prevRows) => [...prevRows, newRow]);
-      // setNewRow({ id: Math.random(), pub: '', drink: '', par: 0, waterHazard: false, customProperty: '' });
-      setNewRow({ id: Math.random(), pub: '', drink: '', par: 0, customProperty: '' });
-
-    };
-  
-    const handleDeleteRow =  (id) => {
-      const updatedRows = [...rows]; 
-      const delData = updatedRows.filter((tbd) => {
-        return id !== tbd.id;
-      });
-      setRows(delData);
-  
-    }
   
     const handleCreateGame = async (event) => {
       event.preventDefault();
 
-      const bingoActive = document.getElementById("bingocheckbox").checked;
+      const bingoActive = false//document.getElementById("bingocheckbox").checked;
 
-      const username = document.getElementById("username").value;
-      const holes = rows
+      const username = document.getElementById("playerName").value;
       
       var gameinfo = {};
       gameinfo["code"] = uuidv4().slice(0,5);
       gameinfo["holes"] = holes;
+      gameinfo["teamsEnabled"] = teamsEnabled;
 
       if (bingoActive) {
         const challenge1 = document.getElementById("challenge1").value;
@@ -102,14 +76,14 @@ function CreateGame() {
       gameUpdates["/games/"+newGameKey] = gameinfo;
       update(ref(db),gameUpdates);
 
-      // create new user object for the host
+      // create new user or team object for the host
       const newUserKey = push(child(ref(db), 'users')).key;
       const userUpdates = {}
       userUpdates["/users/"+newUserKey] = {"username": username, "score": 0};
       update(ref(db),userUpdates);
 
   
-      // create new player entry for user and game
+      // create new player entry for user/team and game
       const playerUpdates = {};
       const playerObject = {};
       playerObject[newUserKey] = true;
@@ -125,80 +99,134 @@ function CreateGame() {
 
   
     }
+
+    function showAddHoleModal(id, toShow){
+      if (id !== undefined) {
+        const addHoleModal = document.getElementById(id);
+        if (toShow) {
+          addHoleModal.classList.remove('hidden')
+        } else {
+          addHoleModal.classList.add('hidden') 
+        }
+        addHoleModal.children[0].reset()
+      }
+    }
+
+    function addHole(event) {
+      event.preventDefault()
+      try {
+        const pubName = document.getElementById("pubName").value;
+        const holePar = parseInt(document.getElementById("holePar").value);
+        const drink = document.getElementById("drink").value;
+                
+        const updatedHoles = [...holes]
+        
+        updatedHoles.push({id: Math.random(), pub: pubName, drink, par: holePar, customProperty: ""})
+        
+        setRows(updatedHoles)
+        
+        showAddHoleModal("addHoleModal", false);
+      } catch {
+        toast.error("Failed to create hole. Please try again")
+      }
+
+    }
   
     return (
-      <div className='createGame'>
-        <p>Please enter the info for your game of pub golf</p>
-        <form onSubmit={handleCreateGame}>
-          <table className='gametable'>
-            <thead>
-              <tr>
-                <th></th>
-                <th>Pub</th>
-                <th>Drink</th>
-                <th>Par</th>
-                {/* <th>Water Hazard?</th> */}
-                <th>Custom Hole Property <div class="tooltip">
-                                            <p id="helpIcon">?</p>
-                                            <div class="left">
-                                                This is for any requirements of the hole e.g. you can't go to the toilet here or someone else has to feed you your drink
-                                            </div>
-                                         </div>
-                </th>
-              </tr>
-            </thead>
-            <tbody id="gameInfo">
-              {rows.map((row) => { 
-                return (
-                  <React.Fragment key={row.id}>
-                    <tr>
-                      <td><button id="deleteHole" onClick={() =>  handleDeleteRow(row.id)}>&#x2715;</button></td>
-                      <td><input type="text"  className='textInput' maxLength={100} required  onChange={(e) => handleChange(e.target.value, row.id, 'pub')} /></td>
-                      <td><input type="text"  className='textInput' maxLength={100} required  onChange={(e) => handleChange(e.target.value, row.id, 'drink')} /></td>
-                      <td><input type="number" inputMode="numeric" pattern="[0-9]+" min="1" className='parInput'  required  onChange={(e) => handleChange(e.target.value, row.id, 'par')}/></td>
-                      {/* <td><input type="checkbox" className='waterHazard' onChange={(e) => handleChange(e.target.checked, row.id, 'waterHazard')}/></td> */}
-                      <td><input type="text" className="textInput" maxLength={100} onChange={(e) => handleChange(e.target.value, row.id, "customProperty")}/></td>
-                    </tr>
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
- 
-  
-          <div className='btns'>
-            <div><br></br></div>
+      <main class="flex-grow px-6 py-8">
+        <div class="container mx-auto">
+          <div class="tab-content">
+            <div class="flex">
+              <h2 class="text-left text-xl font-semibold mb-4">Holes</h2>
+              <button class="ms-auto self-start btn-secondary px-4 py-2 rounded-lg font-medium" onClick={() => {showAddHoleModal("startGameModal", true)}}> Start Game </button>
 
-            <button onClick={handleAddRow}>Add Hole</button>
-
-              <div className="createBingo">        
-                <p>Tick if you want bingo as part of your pub golf</p>
-                <input id="bingocheckbox" type="checkbox" onChange={(e) => toggleBingo(e.target.checked)}></input>    
-              </div>
-
-              <div hidden={true} id="bingoSetUpTable">
-                <input className="challengeInput" type="text" id="challenge1" placeholder="Challenge 1"></input>
-                <input className="challengeInput" type="text" id="challenge2" placeholder="Challenge 2"></input>
-                <input className="challengeInput" type="text" id="challenge3" placeholder="Challenge 3"></input>
-                <input className="challengeInput" type="text" id="challenge4" placeholder="Challenge 4"></input>
-                <input className="challengeInput" type="text" id="challenge5" placeholder="Challenge 5"></input>
-                <input className="challengeInput" type="text" id="challenge6" placeholder="Challenge 6"></input>
-                <input className="challengeInput" type="text" id="challenge7" placeholder="Challenge 7"></input>
-                <input className="challengeInput" type="text" id="challenge8" placeholder="Challenge 8"></input>
-                <input className="challengeInput" type="text" id="challenge9" placeholder="Challenge 9"></input>
-              </div>
-
-            <div><br></br></div>
-
-            <div className='usernamediv'>  
-              <input type="text" placeholder='Username' required  id="username"/>
             </div>
-            <div><br></br></div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
 
-            <input className="createBtn" type='submit' disabled={rows.length === 0}  value={"Create Game"}/>
+              <div onClick={() => {showAddHoleModal("addHoleModal", true)}} class="hole-card rounded-lg shadow-lg p-5 border-2 border-dashed border-[#74c69d] flex flex-col items-center justify-center cursor-pointer hover:border-[#d8f3dc]">
+                    <svg class="w-10 h-10 mb-2 text-[#74c69d]" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                    </svg>
+                    <span class="font-medium">Add Hole</span>
+              </div>
+
+              {holes.map((hole, index) => {
+                  return (
+                      <React.Fragment key={index}>
+                          <div class="hole-card rounded-lg shadow-lg p-5">
+                              <div class="flex justify-between items-start">
+                                  <div>
+                                      <h3 class="font-semibold text-lg">{hole.pub}</h3>
+                                      <p class="text-[#a7f3d0]">{hole.drink}</p>
+                                  </div>
+                                  <div class="bg-[#081c15] px-3 py-1 rounded-full flex items-center">
+                                      <span class="text-sm mr-1">Par</span>
+                                      <span class="font-bold">{hole.par}</span>
+                                  </div>
+                              </div>
+                              <div class="mt-2 flex justify-between items-center">
+                                  <span class="text-sm text-gray-300">Hole {index +1}</span>
+                              </div>
+                              <div class="space-y-3 mt-4">
+                  
+                          
+                              </div>                                            
+                          </div>
+                      </React.Fragment>
+                  );
+              })}
+
+            </div>
           </div>
-        </form>
-      </div>
+
+
+          <div id="addHoleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden" >
+            <form onSubmit={(event) => {addHole(event)}}> 
+              <div class="bg-[#2d6a4f] rounded-lg shadow-xl p-6 w-full max-w-md">
+                  <h3 class="text-xl font-semibold mb-4">A New Hole</h3>
+                  <div class="mb-4">
+                      <label for="pubName" class="block mb-2">Pub/Bar Name</label>
+                      <input type="text" id="pubName" class="score-input w-full px-4 py-2 rounded-lg" placeholder="Enter pub name" required/>
+                  </div>
+                  <div class="mb-4">
+                      <label for="drink" class="block mb-2">Drink</label>
+                      <input type="text" id="drink" class="score-input w-full px-4 py-2 rounded-lg" placeholder="Enter drink" required/>
+                  </div>
+                  <div class="mb-4">
+                      <label for="holePar" class="block mb-2">Par (expected sips)</label>
+                      <input type="number" id="holePar" class="score-input w-full px-4 py-2 rounded-lg" min="1" placeholder="0" required/>                  
+                  </div>
+                  <div class="flex justify-end space-x-3">
+                      <input type="submit" id="confirmAddHole" class="btn-primary px-4 py-2 rounded-lg font-medium" value={"Add Hole"}/>
+                      <button type="reset" onClick={(event) => {event.preventDefault();showAddHoleModal("addHoleModal", false)}} id="cancelAddHole" class="px-4 py-2 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 transition">Cancel</button>
+                  </div>
+              </div>
+            </form>
+          </div>
+
+          <div id="startGameModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <form onSubmit={async (event) => { await handleCreateGame(event); showAddHoleModal("startGameModal", false)}}> 
+              <div class="bg-[#2d6a4f] rounded-lg shadow-xl p-6 w-full max-w-md">
+                  <h3 class="text-xl font-semibold mb-4">Start game</h3>
+                  <div class="mb-4">
+                      <label for="enableTeams" class="block mb-2">Enable teams</label>
+                      <Checkbox onChange={(e) => {enableTeams(e.target.checked)}} checked={teamsEnabled} ></Checkbox>
+                  </div>
+                  <div class="mb-4">
+                      <label for="playerName" class="block mb-2">{teamsEnabled ? "Team Name": "Player Name"}</label>
+                      <input type="text" id="playerName" class="score-input w-full px-4 py-2 rounded-lg" placeholder={teamsEnabled ? "Enter Team Name": "Enter Player Name"} required/>
+                  </div>
+                  <div class="flex justify-end space-x-3">
+                      <input type="submit" id="confirmStartGame" class="btn-primary px-4 py-2 rounded-lg font-medium" value={"Start and Join Game"}/>
+                      <button onClick={(event) => {event.preventDefault(); showAddHoleModal("startGameModal", false)}} id="cancelStartGame" class="px-4 py-2 rounded-lg font-medium bg-gray-600 hover:bg-gray-700 transition">Cancel</button>
+                  </div>
+              </div>
+            </form>
+          </div>
+
+        </div>
+
+      </main>
     );
 }
 
