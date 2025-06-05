@@ -2,17 +2,20 @@ import './App.css';
 import Home from './Home'
 import CreateGame from './CreateGame';
 import GamePage from './GamePage';
-import TeamsCreation from './TeamsCreation';
+// import TeamsCreation from './TeamsCreation';
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { Toaster } from 'react-hot-toast';
+import React from 'react';
 
-function App() {
+
+
+export default function App() {
   return (
     <Router>    
       <Toaster position="top-center"/>
-          <header class="bg-[#081c15] py-4 px-6 shadow-lg">
-                <div class="container mx-auto flex justify-center">
-                    <div class="flex items-center">
+          <header className="bg-[#081c15] py-4 px-6 shadow-lg">
+                <div className="container mx-auto flex justify-center">
+                    <div className="flex items-center">
                        <svg width="80" height="80" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
                         <g transform="rotate(-20 70 100)">
                           <rect x="50" y="80" width="40" height="60" rx="5" ry="5" fill="#ffcc00" stroke="#333" stroke-width="3"/>
@@ -40,7 +43,7 @@ function App() {
                           </g>
                         </g>
                       </svg>
-                        <Link to="/" class="text-2xl font-bold">Pub Golf Scorecard</Link>
+                        <Link to="/" className="text-2xl font-bold">Pub Golf Scorecard</Link>
                     </div>
                 </div>  
             </header>
@@ -49,11 +52,9 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/create" element={<CreateGame />} />
           <Route path="/game/:gamecode" element={<GamePage/>}/>
-          <Route path="/teams" element={<TeamsCreation/>}/>
+          {/* <Route path="/teams" element={<TeamsCreation/>}/> */}
           <Route path="*" element={<Home/>} />
         </Routes>
     </Router>
   );
 }
-
-export default App;
