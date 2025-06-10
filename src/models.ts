@@ -18,8 +18,23 @@ export interface gameInfo {
 
 export interface playerInfo {
     id: string;
-    
+
     username: string;
 
     score: number;
+}
+
+export interface teamInfo {
+
+    id: string; 
+    
+    teamName: string;
+
+    members: members;
+
+    teamScore: number;
+}
+
+export interface members {
+    [id: string]: Omit<playerInfo, "id">
 }

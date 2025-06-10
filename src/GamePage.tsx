@@ -2,12 +2,14 @@ import {useParams} from "react-router-dom";
 import { app } from "./firebase";
 import React, { useEffect, useState } from "react";
 import { Tab, Tabs, TabList, TabPanel } from 'react-tabs';
-import { getDatabase, ref, onValue, get, query, orderByChild, equalTo, update, onChildAdded, DataSnapshot} from 'firebase/database';
+import { getDatabase, ref, onValue, get, query, orderByChild, equalTo, update, onChildAdded, DataSnapshot, onChildChanged, orderByKey} from 'firebase/database';
 import toast from "react-hot-toast";
-import { playerInfo, hole } from "./models";
+import { playerInfo, hole, teamInfo, gameInfo, members } from "./models";
 
 const db = getDatabase(app);
 const UID = window.localStorage.getItem("UID");
+let teamID: string | null
+let teamsEnabled = false
 
 function ordinal_suffix_of(i: number) {
     var j = i % 10,
@@ -39,10 +41,10 @@ function GamePage() {
 
     console.log("game page")
 
-    const [leaderboard, setLeaderboard] = useState<playerInfo[]>([]);
+    const [leaderboard, setLeaderboard] = useState<playerInfo[] | teamInfo[]>([]);
     const [isLoading , setLoading] = useState(true);
     const [scores , setScores] = useState<number[]>([]);
-    const [holes , setHoles] = useState([]);
+    const [holes , setHoles] = useState<hole[]>([]);
     const [challenges , setChallenges] = useState([])
     const [bingoPoints , setBingoPoints] = useState(0);
     const [completeChallenges , setCompleteChallenges] = useState(["bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare","bingosquare"]);
@@ -63,37 +65,79 @@ function GamePage() {
             });
 
             // get leaderboard
-            let playersData: playerInfo[] = [];
-            const playersRef = ref(db, 'players/'+Object.keys(gameData)[0]);
-            let i =0;
+            teamsEnabled = gameData[Object.keys(gameData)[0]].teamsEnabled
             let handles: Function[] = [];
-            onChildAdded(playersRef, (snapshot: DataSnapshot) => {
-                console.log(snapshot.key);
-                let userRef = ref(db, 'users/'+snapshot.key);
-                i +=1;
-                let fn = onValue(userRef,(userSnap) => {
-                    if (playersData.find(player => player.id === snapshot.key) === undefined) {
-                        const idObj = {id:snapshot.key}
-                        const playerObject = {
-                            ...idObj,
-                            ...userSnap.val()
+            console.log("game key", gameData)
+            const playersRef = ref(db, 'players/'+Object.keys(gameData)[0]);
+            if (!teamsEnabled){
+                let playersData: playerInfo[] = [];
+                let i =0;
+                onChildAdded(playersRef, (snapshot: DataSnapshot) => {
+                    console.log(snapshot.key);
+                    let userRef = ref(db, 'users/'+snapshot.key);
+                    i +=1;
+                    let fn = onValue(userRef,(userSnap) => {
+                        if (playersData.find(player => player.id === snapshot.key) === undefined) {
+                            const idObj = {id:snapshot.key}
+                            const playerObject = {
+                                ...idObj,
+                                ...userSnap.val()
+                            }
+                            playersData.push(playerObject);
+                        } else {
+                            playersData = playersData.map(player => player.id === snapshot.key ? {...player, username: userSnap.val().username,score : userSnap.val().score} : player);
                         }
-                        playersData.push(playerObject);
-                    } else {
-                        playersData = playersData.map(player => player.id === snapshot.key ? {...player, username: userSnap.val().username,score : userSnap.val().score} : player);
-                    }
-                    playersData.sort(function(a, b){
-                       return a.score - b.score;
+                        playersData.sort(function(a, b){
+                        return a.score - b.score;
+                        });
+                        if (playersData.length === i){ //basically wait till entire leaderboard loaded  
+                            setLeaderboard(playersData);
+                        }
                     });
-                    if (playersData.length === i){ //basically wait till entire leaderboard loaded  
-                        setLeaderboard(playersData);
-                    }
+                    handles.push(fn);
+
                 });
-                handles.push(fn);
+            } else {
+                teamID = window.localStorage.getItem("teamID")
+                const x = await get(playersRef)
+                console.log(x)
+                const playersData = x.val();
+                const teamsKeys = Object.keys(playersData)
 
-            });
+                let teamsData: teamInfo[] = []
+                
+                let i =0;
+                onChildAdded(playersRef, (snapshot: DataSnapshot) => {
+                    let teamsRef = ref(db, 'teams/'+snapshot.key);
+                    i +=1;
+                    let fn = onValue(teamsRef, (teamSnap: DataSnapshot) => {
+                        //teamsData = leaderboard as teamInfo[]
+                        console.log(teamSnap.key);
+                        console.log(teamSnap.val())
 
-            const holes = gameData[Object.keys(gameData)[0]]["holes"];
+                        if (teamsData.find(team => team.id === teamSnap.key) === undefined) { // team not added to list yet
+                        const teamObj: teamInfo = {id: teamSnap.key!, ...teamSnap.val()}
+                        teamsData.push(teamObj)
+                        } else {
+                        teamsData = teamsData.map(team => team.id === teamSnap.key ? {id: teamSnap.key, ...teamSnap.val()}: team)
+                        }
+                        const calcTeamScore = (members: members): number => {
+                            return Object.values(members).map((user) => user.score).reduce((sum, current) => sum + current,0)
+                        }
+                        teamsData = teamsData.map((team) => {return {...team, teamScore: calcTeamScore(team.members)}})
+                        teamsData.sort((a,b) => a.teamScore - b.teamScore)
+                        console.log(teamsData)
+                        if (teamsData.length === i){ //basically wait till entire leaderboard loaded  
+                            setLeaderboard(teamsData);
+                        }
+
+                    });
+                    handles.push(fn)
+
+                });
+            }
+
+            const holes = gameData[Object.keys(gameData)[0]].holes//gameData[Object.keys(gameData)[0]]["holes"];
             // const challenges = gameData[Object.keys(gameData)[0]]["challenges"];
             // if (challenges !== undefined) {
             //     const challengesArray = Object.values(challenges);
@@ -114,9 +158,9 @@ function GamePage() {
 
 
 
-    });
+    }, []);
 
-        const handleScoreChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const handleScoreChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
             const score: string = event.target.value
             const hole: string | undefined = event.target.dataset.hole
             let holeInt;
@@ -134,15 +178,22 @@ function GamePage() {
                 setScores(newScores);
                 window.localStorage.setItem("scores", newScores.join(","))
                 //update users score on database
-                const userUpdates: Record<string, Omit<playerInfo, "id">> = {}
                 const UID = window.localStorage.getItem("UID");
                 const username = window.localStorage.getItem("username");
                 if (username === null) {
                     throw Error("Failed to find username")
                 }
                 
-                userUpdates["/users/"+UID] = {"username": username, "score": newScores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints  };
-                update(ref(db),userUpdates);
+                if (teamsEnabled) {
+                    const teamUpdates: Record<string, Omit<playerInfo, "id">> = {}
+                    teamUpdates["/teams/"+teamID+"/members/"+UID] = {"username": username, "score": newScores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints  };
+                    await update(ref(db), teamUpdates)
+                } else {
+                    const userUpdates: Record<string, Omit<playerInfo, "id">> = {}
+
+                    userUpdates["/users/"+UID] = {"username": username, "score": newScores.reduce((partialSum, a) => partialSum + a, 0) + bingoPoints  };
+                    await update(ref(db),userUpdates);
+                }
             } catch {
                 toast.error(`There was an error updating your score. Please try again`)
             } 
@@ -282,19 +333,32 @@ function GamePage() {
                                     <thead>
                                         <tr className="border-b-2 border-[#74c69d]">
                                             <th className="text-left py-3 px-4">Position</th>
-                                            <th className="text-left py-3 px-4">Username</th>
+                                            <th className="text-left py-3 px-4">{teamsEnabled ? "Team name" : "Username"}</th>
                                             <th className="text-left py-3 px-4">Score</th>
                                         </tr>
                                     </thead>
                                     <tbody id="leaderboardBody">
                                         { leaderboard.map((player, index) => {
-
+                                            if (teamID === null || teamID === undefined)
+                                            {
+                                                player = player as playerInfo
                                             return (
                                                 <React.Fragment key={index}>
-                                                    <tr className={player.id === UID? "bg-[#1b4332]" : ""}>
+                                                    <tr className={player.id === UID || player.id === teamID? "bg-[#1b4332]" : ""}>
                                                         <td className="py-3 px-4">{ordinal_suffix_of(index+1)}</td>
-                                                        <td className="py-3 px-4">{player["username"]}</td>
-                                                        <td className="py-3 px-4">{player["score"]}</td>
+                                                        <td className="py-3 px-4">{player.username}</td>
+                                                        <td className="py-3 px-4">{player.score}</td>
+                                                    </tr>
+                                                </React.Fragment>
+                                            );
+                                            }
+                                            player = player as teamInfo
+                                            return (
+                                                <React.Fragment key={index}>
+                                                    <tr className={player.id === teamID? "bg-[#1b4332]" : ""}>
+                                                        <td className="py-3 px-4">{ordinal_suffix_of(index+1)}</td>
+                                                        <td className="py-3 px-4">{player.teamName}</td>
+                                                        <td className="py-3 px-4">{player.teamScore}</td>
                                                     </tr>
                                                 </React.Fragment>
                                             );

@@ -5,8 +5,9 @@ export function showModal(id: string, toShow: boolean){
   } else {
     addPlayerModal?.classList.add('hidden') 
   }
-  const parentForm =  addPlayerModal?.children[0] as HTMLFormElement
-  if (parentForm) {
-    parentForm.reset()
+  const parentForm =  addPlayerModal?.children[0]
+  
+  if (parentForm?.tagName === "FORM" ) {
+    (parentForm as HTMLFormElement).reset()
   }
 }

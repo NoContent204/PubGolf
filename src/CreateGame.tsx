@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { v4 as uuidv4 } from "uuid";
+import { v4 as uuidv4, v4 } from "uuid";
 import { app } from "./firebase";
 import { getDatabase, ref, push, child, update } from "firebase/database";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import Checkbox from '@mui/material/Checkbox';
-import { gameInfo, hole, playerInfo } from "./models";
+import { gameInfo, hole, playerInfo, teamInfo, members } from "./models";
 import { showModal } from "./utils";
 
 // function toggleBingo(checked){
@@ -49,6 +49,7 @@ function CreateGame() {
       //const bingoActive = false//document.getElementById("bingocheckbox").checked;
 
       const username: string = (document.getElementById("playerName") as HTMLInputElement).value;
+      const teamName: string | undefined = (document.getElementById("teamName") as HTMLInputElement)?.value;
       
       const gameinfo: gameInfo = {
         holes: [],
@@ -85,24 +86,44 @@ function CreateGame() {
         }
         const gameUpdates: Record<string, gameInfo> = {}
         gameUpdates["/games/"+newGameKey] = gameinfo;
-        update(ref(db),gameUpdates);
+        await update(ref(db),gameUpdates);
 
-        // create new user or team object for the host
-        const newUserKey = push(child(ref(db), 'users')).key;
-        if (newUserKey === null) {
-          throw Error("Failed to create new user key")
+
+
+
+        let newTeamKey: string | null
+        let newUserKey: string | null
+        if (teamsEnabled) {
+          // create new team entry
+          newUserKey = v4()
+          newTeamKey = push(child(ref(db), 'teams')).key;
+          if (newTeamKey === null) {
+            throw Error("Failed to create new team key")
+          }
+          const teamUpdate: Record<string, Omit<teamInfo,"id">> = {}
+
+          const members: members = {}
+          members[newUserKey] = {username, "score": 0}
+          teamUpdate["/teams/"+newTeamKey] = {teamName, teamScore: 0, members: members}
+          await update(ref(db), teamUpdate)
+          window.localStorage.setItem("teamID", newTeamKey);
+        } else {
+          // create new user object for the host
+          newUserKey = push(child(ref(db), 'users')).key;
+          if (newUserKey === null) {
+            throw Error("Failed to create new user key")
+          }
+          const userUpdates: Record<string, Omit<playerInfo, "id">> = {}
+          userUpdates["/users/"+newUserKey] = {username, "score": 0};
+          await update(ref(db),userUpdates);
         }
-        const userUpdates: Record<string, Omit<playerInfo, "id">> = {}
-        userUpdates["/users/"+newUserKey] = {username, "score": 0};
-        update(ref(db),userUpdates);
-
     
         // create new player entry for user/team and game
         const playerUpdates: Record<string,Record<string, boolean>>  = {};
         const playerObject: Record<string, boolean> = {};
-        playerObject[newUserKey] = true;
+        playerObject[teamsEnabled ? newTeamKey! : newUserKey] = true;
         playerUpdates["/players/"+newGameKey] = playerObject;
-        update(ref(db),playerUpdates);
+        await update(ref(db),playerUpdates);
 
         window.localStorage.setItem("username", username);
         window.localStorage.setItem("UID", newUserKey);
@@ -110,8 +131,12 @@ function CreateGame() {
         window.localStorage.setItem("game-code",gameinfo.gameCode)
 
         nav('/game/'+gameinfo.gameCode);
-    } catch {
-      toast.error("Failed to create game, please try again")
+    } catch (error) {
+      let errorMsg = "Failed to create game, please try again."
+      if (error instanceof Error){
+        errorMsg += ` ${error.message}`
+      }
+      toast.error(errorMsg) 
     }
   
     }
@@ -216,9 +241,13 @@ function CreateGame() {
                       <label htmlFor="enableTeams" className="block mb-2">Enable teams</label>
                       <Checkbox onChange={(e) => {enableTeams(e.target.checked)}} checked={teamsEnabled} ></Checkbox>
                   </div>
+                  {teamsEnabled ? <div className="mb-4">
+                      <label htmlFor="teamName" className="block mb-2">Team Name</label>
+                      <input type="text" id="teamName" className="score-input w-full px-4 py-2 rounded-lg" placeholder="Enter Team Name" required/>
+                  </div> : <></>}
                   <div className="mb-4">
-                      <label htmlFor="playerName" className="block mb-2">{teamsEnabled ? "Team Name": "Player Name"}</label>
-                      <input type="text" id="playerName" className="score-input w-full px-4 py-2 rounded-lg" placeholder={teamsEnabled ? "Enter Team Name": "Enter Player Name"} required/>
+                      <label htmlFor="playerName" className="block mb-2">Player Name</label>
+                      <input type="text" id="playerName" className="score-input w-full px-4 py-2 rounded-lg" placeholder="Enter Player Name" required/>
                   </div>
                   <div className="flex justify-end space-x-3">
                       <input type="submit" id="confirmStartGame" className="btn-primary px-4 py-2 rounded-lg font-medium" value={"Start and Join Game"}/>
